@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Chomp</title>
+<style>
+  :root{
+    --bg-deep:#06070f;
+    --bg-panel:#10122050;
+    --bg-panel-solid:#12142a;
+    --neon-blue:#2e6bff;
+    --neon-blue-dim:#16327a;
+    --amber:#ffcc4d;
+    --pink:#ff6bd6;
+    --cyan:#4df0ff;
+    --danger:#ff5252;
+    --text-hi:#f4f4fb;
+    --text-mid:#aab0d8;
+    --text-dim:#5c6192;
+    --font-display:'Rajdhani',sans-serif;
+    --font-body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:var(--bg-deep);color:var(--text-hi);
+    font-family:var(--font-body);overflow:hidden;-webkit-font-smoothing:antialiased;}
+  #app{position:relative;width:100%;height:100vh;display:flex;align-items:center;justify-content:center;}
+  .screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+  .hidden{display:none !important;}
+
+  /* ---------- INFO SCREEN ---------- */
+  #screen-info{
+    background:radial-gradient(ellipse at 50% -10%, #171c3e 0%, var(--bg-deep) 60%);
+    gap:16px;padding:20px;text-align:center;overflow-y:auto;width:100%;
+  }
+  .brand{font-family:var(--font-display);font-weight:700;letter-spacing:.12em;
+    font-size:clamp(28px,5.5vw,46px);text-transform:uppercase;color:var(--text-hi);
+    text-shadow:0 0 18px rgba(46,107,255,0.5);}
+  .brand span{color:var(--amber);text-shadow:0 0 18px rgba(255,204,77,0.6);}
+  .tagline{color:var(--text-mid);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-top:-8px;}
+
+  .panels{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;max-width:920px;}
+  .card{background:var(--bg-panel-solid);border:1px solid #262b55;border-radius:14px;
+    padding:20px 22px;width:min(300px,88vw);box-shadow:0 20px 60px -20px rgba(0,0,0,.7);text-align:left;}
+  .card h3{font-family:var(--font-display);font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--cyan);margin-bottom:10px;}
+  .card ul{list-style:none;font-size:13px;color:var(--text-mid);line-height:1.9;}
+  .card ul b{color:var(--text-hi);}
+  .card .row{display:flex;justify-content:space-between;gap:10px;}
+
+  .field{margin-bottom:14px;text-align:left;}
+  .field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:6px;}
+  .field input[type="text"]{width:100%;background:#191d3c;border:1px solid #2d336b;
+    border-radius:8px;padding:10px 12px;color:var(--text-hi);font-size:14px;outline:none;transition:border-color .15s;}
+  .field input[type="text"]:focus{border-color:var(--cyan);}
+
+  .loc-options{display:flex;gap:8px;}
+  .loc-opt{flex:1;position:relative;}
+  .loc-opt input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;}
+  .loc-opt input:focus-visible + label{outline:2px solid var(--cyan);outline-offset:2px;}
+  .loc-opt label{display:block;text-align:center;padding:9px 4px;border:1px solid #2d336b;border-radius:8px;
+    background:#191d3c;color:var(--text-mid);font-size:12px;cursor:pointer;transition:all .15s;}
+  .loc-opt input:checked + label{border-color:var(--cyan);background:rgba(77,240,255,.12);color:var(--cyan);}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 18px;
+    border-radius:9px;border:none;font-family:var(--font-display);font-weight:700;font-size:16px;
+    letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:transform .1s, filter .15s;}
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:linear-gradient(180deg,#ffd866,#e8a93d);color:#1a1200;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent;border:1px solid #2d336b;color:var(--text-mid);}
+  .btn-ghost:hover{border-color:var(--cyan);color:var(--cyan);}
+  .hint-err{color:var(--danger);font-size:12px;margin-top:2px;min-height:14px;}
+
+  kbd{background:#191d3c;border:1px solid #2d336b;border-radius:4px;padding:2px 7px;color:var(--text-hi);
+    font-family:var(--font-body);font-size:12px;}
+
+  /* ---------- GAME SCREEN ---------- */
+  #screen-game{background:var(--bg-deep);}
+  #gameWrap{position:relative;width:100%;height:100%;}
+  canvas#gameCanvas{display:block;width:100%;height:100%;}
+  .hud{position:absolute;inset:0;pointer-events:none;font-family:var(--font-display);}
+  .hud-top{position:absolute;top:14px;left:0;right:0;display:flex;justify-content:space-between;
+    align-items:flex-start;padding:0 18px;}
+  .hud-chip{background:rgba(10,12,24,.78);border:1px solid #262b55;border-radius:10px;padding:7px 14px;
+    backdrop-filter:blur(4px);min-width:92px;}
+  .hud-chip .lbl{font-size:10px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;
+    font-family:var(--font-body);}
+  .hud-chip .val{font-size:20px;font-weight:700;color:var(--text-hi);}
+  .hud-chip.score .val{color:var(--amber);}
+  .hud-chip.timer .val{color:var(--cyan);}
+  .hud-chip.timer.warn .val{color:var(--danger);}
+  .lives-wrap{position:absolute;display:flex;gap:6px;align-items:center;}
+  .life-dot{width:16px;height:16px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px rgba(255,204,77,.7);}
+  .life-dot.spent{background:rgba(255,255,255,.08);box-shadow:none;}
+
+  .countdown-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-size:110px;font-weight:700;color:var(--amber);
+    text-shadow:0 0 40px rgba(255,204,77,.6);background:rgba(6,7,15,.4);}
+
+  /* ---------- RESULT SCREEN ---------- */
+  #screen-result{background:radial-gradient(ellipse at 50% 110%, #171c3e 0%, var(--bg-deep) 60%);gap:18px;}
+  .result-badge{font-family:var(--font-display);font-size:14px;letter-spacing:.16em;text-transform:uppercase;
+    padding:6px 16px;border-radius:20px;font-weight:700;}
+  .result-badge.completed{background:rgba(77,240,255,.15);color:var(--cyan);border:1px solid #1c5a66;}
+  .result-badge.down{background:rgba(255,82,82,.15);color:var(--danger);border:1px solid #7a2727;}
+  .result-badge.timeup{background:rgba(255,204,77,.15);color:var(--amber);border:1px solid #8a6a2c;}
+  .result-title{font-family:var(--font-display);font-size:34px;font-weight:700;}
+  .result-stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:620px;}
+  .stat-box{background:var(--bg-panel-solid);border:1px solid #262b55;border-radius:10px;padding:12px 16px;
+    text-align:center;min-width:90px;}
+  .stat-box .lbl{font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;}
+  .stat-box .val{font-family:var(--font-display);font-size:20px;font-weight:700;margin-top:4px;}
+  .result-actions{display:flex;gap:12px;margin-top:4px;}
+  .result-actions .btn{width:auto;padding:12px 26px;}
+  .sync{color:var(--text-dim);font-size:12px;min-height:16px;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ INFO / REGISTRATION SCREEN ============ -->
+  <div id="screen-info" class="screen">
+    <div>
+      <div class="brand">Pixel <span>Chomp</span></div>
+      <div class="tagline">Clear the maze before time — and the ghosts — catch up</div>
+    </div>
+
+    <div class="panels">
+      <div class="card">
+        <h3>Controls</h3>
+        <ul>
+          <li class="row"><span>Arrow keys</span><b>move</b></li>
+          <li class="row"><span>W A S D</span><b>also works</b></li>
+          <li class="row"><span>Goal</span><b>clear every dot</b></li>
+          <li class="row"><span>Time limit</span><b>3:00</b></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Scoring</h3>
+        <ul>
+          <li class="row"><span>Pellet</span><b>+10</b></li>
+          <li class="row"><span>Power pellet</span><b>+50</b></li>
+          <li class="row"><span>Ghost (combo)</span><b>200→400→800→1600</b></li>
+          <li class="row"><span>Bonus fruit</span><b>+100 / +300</b></li>
+          <li class="row"><span>Clear speed bonus</span><b>faster = more</b></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="field">
+          <label for="inputName">Your Name</label>
+          <input type="text" id="inputName" placeholder="e.g. Priya Sharma" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="inputEmpId">Employee ID</label>
+          <input type="text" id="inputEmpId" placeholder="e.g. EMP10432" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Location</label>
+          <div class="loc-options">
+            <div class="loc-opt">
+              <input type="radio" name="location" id="locAmericas" value="Americas">
+              <label for="locAmericas">Americas</label>
+            </div>
+            <div class="loc-opt">
+              <input type="radio" name="location" id="locEmea" value="UK/EMEA">
+              <label for="locEmea">UK/EMEA</label>
+            </div>
+            <div class="loc-opt">
+              <input type="radio" name="location" id="locIndia" value="India">
+              <label for="locIndia">India</label>
+            </div>
+          </div>
+        </div>
+        <div class="hint-err" id="infoError"></div>
+        <button class="btn btn-primary" id="btnStart">Start</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GAME SCREEN ============ -->
+  <div id="screen-game" class="screen hidden">
+    <div id="gameWrap">
+      <canvas id="gameCanvas"></canvas>
+      <div class="hud">
+        <div class="hud-top">
+          <div class="hud-chip score"><div class="lbl">Score</div><div class="val" id="hudScore">0</div></div>
+          <div class="hud-chip timer" id="hudTimerChip"><div class="lbl">Time</div><div class="val" id="hudTimer">3:00</div></div>
+        </div>
+        <div class="lives-wrap" id="livesWrap"></div>
+      </div>
+      <div class="countdown-overlay hidden" id="countdownOverlay">3</div>
+    </div>
+  </div>
+
+  <!-- ============ RESULT SCREEN ============ -->
+  <div id="screen-result" class="screen hidden">
+    <div class="result-badge" id="resultBadge">COMPLETED</div>
+    <div class="result-title" id="resultTitle">Maze Cleared!</div>
+    <div class="result-stats">
+      <div class="stat-box"><div class="lbl">Score</div><div class="val" id="resultScore">0</div></div>
+      <div class="stat-box"><div class="lbl">Time Taken</div><div class="val" id="resultTime">00:00</div></div>
+      <div class="stat-box"><div class="lbl">Pellets</div><div class="val" id="resultPellets">0</div></div>
+      <div class="stat-box"><div class="lbl">Power Pellets</div><div class="val" id="resultPower">0</div></div>
+      <div class="stat-box"><div class="lbl">Ghosts Eaten</div><div class="val" id="resultGhosts">0</div></div>
+    </div>
+    <p class="sync" id="syncMsg"></p>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="btnPlayAgain" style="width:auto;">Play Again</button>
+      <button class="btn btn-ghost" id="btnExit" style="width:auto;">Exit</button>
+    </div>
+    <p class="sync" id="exitNote"></p>
+  </div>
+</div>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================================
+   MAZE DATA — mirrored left-right for a symmetric classic layout.
+   A few extra side openings were added to reduce choke points and make the maze slightly easier. '#'=wall, '.'=pellet,
+   'o'=power pellet, '='=ghost house interior, '-'=ghost house door.
+   ========================================================================= */
+const MAZE_ROWS = [
+  "###################",
+  "#o...............o#",
+  "#.#...#.....#...#.#",
+  "#.#.............#.#",
+  "#.................#",
+  "#.#...#.....#...#.#",
+  "#.....#.....#.....#",
+  "#.................#",
+  "#.#.............#.#",
+  "#.#.....#-#.....#.#",
+  "........#=#........",
+  "#.#.....###.....#.#",
+  "#.#.............#.#",
+  "#.................#",
+  "#.#.............#.#",
+  "#.................#",
+  "#.....#.....#.....#",
+  "#.#.............#.#",
+  "#.................#",
+  "#o...............o#",
+  "###################",];
+const GRID_W = MAZE_ROWS[0].length;
+const GRID_H = MAZE_ROWS.length;
+const TUNNEL_ROW = 10;
+
+/* =========================================================================
+   CONFIG
+   ========================================================================= */
+const CONFIG = {
+  TIME_LIMIT_S: 180, // 3:00
+  PLAYER_SPEED: 5.5,       // tiles per second
+  GHOST_SPEED: 4.0,        // tiles per second (normal)
+  GHOST_FRIGHT_SPEED: 3.0, // tiles per second (vulnerable)
+  GHOST_EYES_SPEED: 6.5,    // tiles per second (returning to base after being eaten)
+  FRIGHTENED_DURATION_MS: 7000,
+  MODE_SCATTER_MS: 6000,
+  MODE_CHASE_MS: 18000,
+  LIVES: 5,
+  POWER_RESPAWN_MS: 10000, // consumed power pellet is replaced after 10 seconds
+  MAX_POWER_PELLETS: 4,
+  FRUIT_FIRST_SPAWN_S: 30,
+  FRUIT_RESPAWN_S: 15, // after a fruit is consumed, the next one appears 15 seconds later
+  // ---- Centralized tracking (optional) ----
+  REMOTE_ENDPOINT_URL: "https://script.google.com/macros/s/AKfycbzePTYziah-VzIN2wGw7Etv0kmrPlvtCv5hEG_7-HhRZlvtJjBsvtwPpKpkZ71IZo7gsQ/exec",
+  REMOTE_SHARED_SECRET: "CHANGE_ME_SHARED_SECRET",
+};
+
+const STORAGE_KEY = "pixelchomp_records_v1";
+
+/* =========================================================================
+   DOM REFS
+   ========================================================================= */
+const screens = {
+  info: document.getElementById('screen-info'),
+  game: document.getElementById('screen-game'),
+  result: document.getElementById('screen-result'),
+};
+function showScreen(name){
+  Object.values(screens).forEach(s => s.classList.add('hidden'));
+  screens[name].classList.remove('hidden');
+}
+
+const inputName = document.getElementById('inputName');
+const inputEmpId = document.getElementById('inputEmpId');
+const infoError = document.getElementById('infoError');
+const btnStart = document.getElementById('btnStart');
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const gameWrap = document.getElementById('gameWrap');
+
+const hudScore = document.getElementById('hudScore');
+const hudTimer = document.getElementById('hudTimer');
+const hudTimerChip = document.getElementById('hudTimerChip');
+const livesWrap = document.getElementById('livesWrap');
+const countdownOverlay = document.getElementById('countdownOverlay');
+
+const resultBadge = document.getElementById('resultBadge');
+const resultTitle = document.getElementById('resultTitle');
+const resultScore = document.getElementById('resultScore');
+const resultTime = document.getElementById('resultTime');
+const resultPellets = document.getElementById('resultPellets');
+const resultPower = document.getElementById('resultPower');
+const resultGhosts = document.getElementById('resultGhosts');
+const syncMsg = document.getElementById('syncMsg');
+const btnPlayAgain = document.getElementById('btnPlayAgain');
+const btnExit = document.getElementById('btnExit');
+
+/* =========================================================================
+   CANVAS SIZING — maintain the maze's fixed aspect ratio, letterboxed
+   ========================================================================= */
+let W = 0, H = 0, TILE = 24, offsetX = 0, offsetY = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
+function resizeCanvas(){
+  const rect = gameWrap.getBoundingClientRect();
+  if(rect.width === 0 || rect.height === 0) return;
+  W = rect.width; H = rect.height;
+  canvas.width = Math.round(W * DPR);
+  canvas.height = Math.round(H * DPR);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+
+  TILE = Math.floor(Math.min((W*0.94) / GRID_W, (H*0.94) / GRID_H));
+  offsetX = (W - GRID_W*TILE) / 2;
+  offsetY = (H - GRID_H*TILE) / 2;
+
+  // Keep lives visibly outside the maze, in the free space just below it.
+  livesWrap.style.left = Math.max(18, offsetX) + 'px';
+  livesWrap.style.top = Math.min(H - 28, offsetY + GRID_H*TILE + 8) + 'px';
+}
+window.addEventListener('resize', resizeCanvas);
+
+function tileToPx(col, row){ return { x: offsetX + col*TILE + TILE/2, y: offsetY + row*TILE + TILE/2 }; }
+
+/* =========================================================================
+   MAZE HELPERS
+   ========================================================================= */
+function cellAt(col, row){
+  if(row < 0 || row >= GRID_H) return '#';
+  let c = col;
+  // Horizontal wrap exists ONLY on the dedicated tunnel row. On every other
+  // row, going past the maze edge is a wall. This keeps ghosts contained.
+  if(c < 0 || c >= GRID_W){
+    if(row !== TUNNEL_ROW) return '#';
+    c = (c + GRID_W) % GRID_W;
+  }
+  return MAZE_ROWS[row][c];
+}
+function isWalkable(col, row, forGhostHouse){
+  const c = cellAt(col, row);
+  if(c === '#') return false;
+  if(c === '=' || c === '-'){ return !!forGhostHouse; }
+  return true;
+}
+// Ghosts are never allowed to use the side tunnel or occupy the maze's border
+// columns. Pac-Man can still use the tunnel, but ghosts remain fully contained
+// inside the visible maze at all times.
+function isGhostWalkable(col, row, allowHouse){
+  if(col <= 0 || col >= GRID_W-1) return false;
+  return isWalkable(col, row, allowHouse);
+}
+const DIRS = {
+  up:    {dx:0, dy:-1},
+  down:  {dx:0, dy:1},
+  left:  {dx:-1,dy:0},
+  right: {dx:1, dy:0},
+};
+function oppositeDir(d){
+  return d==='up'?'down' : d==='down'?'up' : d==='left'?'right' : d==='right'?'left' : null;
+}
+
+/* =========================================================================
+   GAME STATE
+   ========================================================================= */
+let pellets, player, ghosts, fruit, keys, raceState, particles, popups, powerSpawnPoints;
+let currentPlayerInfo = null;
+let rafId;
+
+function buildPellets(){
+  pellets = []; // {col,row,type:'pellet'|'power',alive}
+  powerSpawnPoints = [];
+  for(let r=0;r<GRID_H;r++){
+    for(let c=0;c<GRID_W;c++){
+      const ch = MAZE_ROWS[r][c];
+      if(ch === '.') pellets.push({col:c,row:r,type:'pellet',alive:true});
+      else if(ch === 'o'){
+        pellets.push({col:c,row:r,type:'power',alive:true});
+        powerSpawnPoints.push({col:c,row:r});
+      }
+    }
+  }
+}
+
+function activePowerPellets(){
+  return pellets.filter(p=>p.type==='power' && p.alive).length;
+}
+
+function schedulePowerRespawn(){
+  raceState.powerRespawnTimers.push(CONFIG.POWER_RESPAWN_MS);
+}
+
+function updatePowerPelletRespawns(dt){
+  for(let i=raceState.powerRespawnTimers.length-1;i>=0;i--){
+    raceState.powerRespawnTimers[i] -= dt*1000;
+    if(raceState.powerRespawnTimers[i] > 0) continue;
+    raceState.powerRespawnTimers.splice(i,1);
+    if(activePowerPellets() >= CONFIG.MAX_POWER_PELLETS) continue;
+
+    const unavailable = new Set(
+      pellets.filter(p=>p.type==='power' && p.alive).map(p=>p.col+','+p.row)
+    );
+    const choices = powerSpawnPoints.filter(sp=>!unavailable.has(sp.col+','+sp.row));
+    if(!choices.length) continue;
+    const sp = choices[Math.floor(Math.random()*choices.length)];
+    const existing = pellets.find(p=>p.type==='power' && p.col===sp.col && p.row===sp.row && !p.alive);
+    if(existing) existing.alive = true;
+    else pellets.push({col:sp.col,row:sp.row,type:'power',alive:true});
+  }
+}
+
+function findStart(){
+  // Pac-Man starts a few rows below the ghost house, on the vertical corridor
+  return { col: 9, row: 15 };
+}
+
+const GHOST_DEFS = [
+  { name:'Crimson', color:'#ff5252', corner:{col:4,row:4} },
+  { name:'Blush',   color:'#ff6bd6', corner:{col:GRID_W-5,row:4} },
+  { name:'Aqua',    color:'#4df0ff', corner:{col:4,row:GRID_H-5} },
+  { name:'Amber',   color:'#ffb24d', corner:{col:GRID_W-5,row:GRID_H-5} },
+];
+
+function resetGameState(){
+  buildPellets();
+  const start = findStart();
+  const p = tileToPx(start.col, start.row);
+  player = {
+    col:start.col, row:start.row, x:p.x, y:p.y,
+    dir:null, nextDir:null, speed:CONFIG.PLAYER_SPEED,
+    mouthPhase:0, alive:true,
+  };
+
+  const ghostStarts = [
+    {col:9,row:8}, {col:7,row:10}, {col:11,row:10}, {col:9,row:12}
+  ];
+  ghosts = GHOST_DEFS.map((def,i)=>{
+    const gs = ghostStarts[i];
+    const gp = tileToPx(gs.col, gs.row);
+    return {
+      name:def.name, color:def.color, corner:def.corner,
+      col:gs.col, row:gs.row, x:gp.x, y:gp.y,
+      dir:null, state:'scatter', // 'scatter' | 'chase' | 'frightened' | 'eyes'
+      frightTimer:0, releaseDelay:i*1800, pendingReverse:false,
+    };
+  });
+
+  fruit = { active:false, col:9, row:12, kind:0 };
+  keys = { up:false, down:false, left:false, right:false };
+  player.heldDir = null;
+  particles = [];
+  popups = [];
+
+  raceState = {
+    phase:'idle', elapsed:0, timeLeft: CONFIG.TIME_LIMIT_S,
+    score:0, pelletsEaten:0, powerEaten:0, ghostsEaten:0,
+    ghostCombo:0, modeTimer:0, mode:'scatter', totalPellets:pellets.length,
+    countdownValue:3, lastFrameT:0, endedStatus:null,
+    lives: CONFIG.LIVES, respawnTimer:0, powerRespawnTimers:[],
+    nextFruitSpawnAt: CONFIG.FRUIT_FIRST_SPAWN_S, fruitsSpawned:0,
+  };
+}
+
+/* =========================================================================
+   INPUT
+   ========================================================================= */
+window.addEventListener('keydown', (e)=>{
+  const tag = (e.target && e.target.tagName) || '';
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if(raceState.phase !== 'running') return;
+  let dir = null;
+  switch(e.key){
+    case 'ArrowUp': case 'w': case 'W': dir='up'; break;
+    case 'ArrowDown': case 's': case 'S': dir='down'; break;
+    case 'ArrowLeft': case 'a': case 'A': dir='left'; break;
+    case 'ArrowRight': case 'd': case 'D': dir='right'; break;
+  }
+  if(dir){
+    keys[dir] = true;
+    player.heldDir = dir;
+    player.nextDir = dir;
+    e.preventDefault();
+  }
+});
+
+window.addEventListener('keyup', (e)=>{
+  const tag = (e.target && e.target.tagName) || '';
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  let dir = null;
+  switch(e.key){
+    case 'ArrowUp': case 'w': case 'W': dir='up'; break;
+    case 'ArrowDown': case 's': case 'S': dir='down'; break;
+    case 'ArrowLeft': case 'a': case 'A': dir='left'; break;
+    case 'ArrowRight': case 'd': case 'D': dir='right'; break;
+  }
+  if(dir){
+    keys[dir] = false;
+    if(player.heldDir === dir){
+      player.heldDir = null;
+      player.nextDir = null;
+    }
+    e.preventDefault();
+  }
+});
+
+/* =========================================================================
+   BFS PATHFINDING — returns the best next direction from (col,row) toward
+   a target tile, recomputed only at tile centers (not every frame).
+   ========================================================================= */
+function bfsNextDir(fromCol, fromRow, targetCol, targetRow, allowHouse){
+  if(fromCol===targetCol && fromRow===targetRow) return null;
+  const key = (c,r)=> r*1000+((c+GRID_W)%GRID_W);
+  const visited = new Set([key(fromCol,fromRow)]);
+  const queue = [{col:fromCol,row:fromRow,firstDir:null}];
+  let qi = 0;
+  while(qi < queue.length){
+    const cur = queue[qi++];
+    for(const dirName in DIRS){
+      const d = DIRS[dirName];
+      const nc = cur.col+d.dx, nr = cur.row+d.dy;
+      // Ghost pathfinding never wraps through the side tunnel and never enters
+      // the outermost columns, so a ghost sprite cannot leave the visible maze.
+      if(nc < 0 || nc >= GRID_W) continue;
+      if(!isGhostWalkable(nc, nr, allowHouse)) continue;
+      const k = key(nc,nr);
+      if(visited.has(k)) continue;
+      visited.add(k);
+      const firstDir = cur.firstDir || dirName;
+      if(nc === targetCol && nr === targetRow) return firstDir;
+      queue.push({col:nc,row:nr,firstDir});
+      if(queue.length > 600) return firstDir; // safety valve
+    }
+  }
+  return null;
+}
+
+/* =========================================================================
+   ENTITY MOVEMENT HELPERS (grid + smooth interpolation, classic style)
+   ========================================================================= */
+function atTileCenter(entity){
+  const target = tileToPx(entity.col, entity.row);
+  return Math.abs(entity.x-target.x) < 1.5 && Math.abs(entity.y-target.y) < 1.5;
+}
+function snapToTile(entity){
+  const target = tileToPx(entity.col, entity.row);
+  entity.x = target.x; entity.y = target.y;
+}
+function canMove(col, row, dirName, allowHouse){
+  const d = DIRS[dirName];
+  if(!d) return false;
+  return isWalkable(col+d.dx, row+d.dy, allowHouse);
+}
+function ghostCanMove(col, row, dirName, allowHouse){
+  const d = DIRS[dirName];
+  if(!d) return false;
+  return isGhostWalkable(col+d.dx, row+d.dy, allowHouse);
+}
+function stepEntity(entity, dirName, pixelsPerFrame){
+  const d = DIRS[dirName];
+  const beforeX = entity.x, beforeY = entity.y;
+  entity.x += d.dx * pixelsPerFrame;
+  entity.y += d.dy * pixelsPerFrame;
+
+  // Only the dedicated center tunnel may wrap around the maze. This prevents
+  // ghosts from visually leaving the maze on other rows.
+  const mazePxW = GRID_W*TILE;
+  if(entity.row === TUNNEL_ROW){
+    if(entity.x < offsetX) entity.x += mazePxW;
+    if(entity.x > offsetX+mazePxW) entity.x -= mazePxW;
+  }
+
+  // Clamp to the logical destination tile when a frame would overshoot its
+  // center. Without this, a high-delta frame can skip the center entirely and
+  // an entity can continue travelling past the maze until it eventually wraps.
+  const target = tileToPx(entity.col, entity.row);
+  const wrappedHorizontally = entity.row === TUNNEL_ROW &&
+    ((dirName==='right' && target.x < beforeX) || (dirName==='left' && target.x > beforeX));
+
+  if(dirName === 'right'){
+    if((!wrappedHorizontally && beforeX <= target.x && entity.x >= target.x) ||
+       (wrappedHorizontally && entity.x >= target.x && entity.x < offsetX + TILE*1.5)) entity.x = target.x;
+  } else if(dirName === 'left'){
+    if((!wrappedHorizontally && beforeX >= target.x && entity.x <= target.x) ||
+       (wrappedHorizontally && entity.x <= target.x && entity.x > offsetX + mazePxW - TILE*1.5)) entity.x = target.x;
+  } else if(dirName === 'down' && beforeY <= target.y && entity.y >= target.y){
+    entity.y = target.y;
+  } else if(dirName === 'up' && beforeY >= target.y && entity.y <= target.y){
+    entity.y = target.y;
+  }
+}
+
+// Ghost movement uses a stricter non-wrapping segment clamp. g.col/g.row are the
+// destination tile while the sprite is travelling, so the previous tile can be
+// reconstructed from the direction. Keeping the sprite strictly between those
+// two tile centers makes it impossible for a ghost to drift beyond the maze even
+// if a browser frame is delayed or another state change occurs mid-run.
+function stepGhostEntity(g, dirName, pixelsPerFrame){
+  const d = DIRS[dirName];
+  if(!d) return;
+
+  const dest = tileToPx(g.col, g.row);
+  const srcCol = g.col - d.dx, srcRow = g.row - d.dy;
+  if(!isGhostWalkable(g.col, g.row, g.state==='eyes') ||
+     srcCol <= 0 || srcCol >= GRID_W-1 || srcRow < 0 || srcRow >= GRID_H){
+    // Invalid logical segment: recover safely at the destination and stop.
+    g.x = dest.x; g.y = dest.y; g.dir = null;
+    return;
+  }
+  const src = tileToPx(srcCol, srcRow);
+
+  let nx = g.x + d.dx * pixelsPerFrame;
+  let ny = g.y + d.dy * pixelsPerFrame;
+  const minX = Math.min(src.x, dest.x), maxX = Math.max(src.x, dest.x);
+  const minY = Math.min(src.y, dest.y), maxY = Math.max(src.y, dest.y);
+  nx = Math.max(minX, Math.min(maxX, nx));
+  ny = Math.max(minY, Math.min(maxY, ny));
+
+  // Extra hard bounds: ghost centers always remain inside the maze border.
+  const leftBound = offsetX + TILE * 1.5;
+  const rightBound = offsetX + (GRID_W - 1.5) * TILE;
+  const topBound = offsetY + TILE * 1.5;
+  const bottomBound = offsetY + (GRID_H - 1.5) * TILE;
+  g.x = Math.max(leftBound, Math.min(rightBound, nx));
+  g.y = Math.max(topBound, Math.min(bottomBound, ny));
+}
+
+/* =========================================================================
+   UPDATE — PLAYER
+   ========================================================================= */
+function updatePlayer(dt){
+  const p = player;
+  if(atTileCenter(p)){
+    snapToTile(p);
+    // try the buffered direction first, fall back to continuing current direction
+    if(canMove(p.col, p.row, p.nextDir, false)){
+      p.dir = p.nextDir;
+    } else if(!canMove(p.col, p.row, p.dir, false)){
+      p.dir = null; // boxed in (shouldn't normally happen in this maze)
+    }
+    if(p.dir){
+      const d = DIRS[p.dir];
+      const nc = ((p.col + d.dx) + GRID_W) % GRID_W, nr = p.row + d.dy;
+      p.col = nc; p.row = nr;
+    }
+  }
+  if(p.dir){
+    stepEntity(p, p.dir, CONFIG.PLAYER_SPEED * TILE * dt);
+    p.mouthPhase += dt*12;
+  }
+  checkPelletCollision();
+  checkFruitCollision();
+}
+
+function checkPelletCollision(){
+  const p = player;
+  // eat any pellet on the player's current tile, checked at tile centers (so fast
+  // movement can't skip a pellet between frames)
+  if(atTileCenter(p)){
+    for(const pel of pellets){
+      if(pel.alive && pel.col === p.col && pel.row === p.row){
+        pel.alive = false;
+        if(pel.type === 'pellet'){
+          raceState.score += 10;
+          raceState.pelletsEaten++;
+          spawnParticles(p.x, p.y, '#ffe9a8', 4);
+        } else {
+          raceState.score += 50;
+          raceState.powerEaten++;
+          schedulePowerRespawn();
+          raceState.ghostCombo = 0;
+          frightenAllGhosts();
+          spawnParticles(p.x, p.y, '#4df0ff', 10);
+          spawnPopup(p.x, p.y, '+50', '#4df0ff');
+        }
+      }
+    }
+  }
+}
+
+function frightenAllGhosts(){
+  for(const g of ghosts){
+    if(g.state === 'eyes') continue;
+    g.state = 'frightened';
+    g.frightTimer = CONFIG.FRIGHTENED_DURATION_MS;
+    // Never reverse a ghost in the middle of a tile. The ghost's col/row already
+    // represent the tile it is travelling toward; flipping only g.dir here would
+    // send its pixels away from that destination forever and eventually outside
+    // the maze. Queue the reversal and perform it cleanly at the next tile center.
+    g.pendingReverse = true;
+  }
+}
+
+function updateFruitSpawning(){
+  // At most one fruit can exist. First appears at 30s; after it is eaten,
+  // the next one appears 15s later and remains available until consumed.
+  if(fruit.active) return;
+  if(raceState.elapsed < raceState.nextFruitSpawnAt) return;
+  fruit.active = true;
+  fruit.kind = raceState.fruitsSpawned % 2;
+  raceState.fruitsSpawned++;
+}
+
+function checkFruitCollision(){
+  if(!fruit.active) return;
+  const p = player;
+  if(atTileCenter(p) && p.col === fruit.col && p.row === fruit.row){
+    const val = fruit.kind === 0 ? 100 : 300;
+    raceState.score += val;
+    spawnPopup(p.x, p.y, '+'+val, '#ffb24d');
+    spawnParticles(p.x, p.y, '#ffb24d', 12);
+    fruit.active = false;
+    raceState.nextFruitSpawnAt = raceState.elapsed + CONFIG.FRUIT_RESPAWN_S;
+  }
+}
+
+/* =========================================================================
+   UPDATE — GHOSTS
+   ========================================================================= */
+function updateGhosts(dt, elapsedMs){
+  // global scatter/chase mode timer (frightened ghosts ignore this, tracked per-ghost)
+  raceState.modeTimer -= dt*1000;
+  if(raceState.modeTimer <= 0){
+    if(raceState.mode === 'scatter'){ raceState.mode='chase'; raceState.modeTimer=CONFIG.MODE_CHASE_MS; }
+    else { raceState.mode='scatter'; raceState.modeTimer=CONFIG.MODE_SCATTER_MS; }
+  }
+
+  for(const g of ghosts){
+    if(g.releaseDelay > 0){ g.releaseDelay -= dt*1000; continue; }
+
+    if(g.state === 'frightened'){
+      g.frightTimer -= dt*1000;
+      if(g.frightTimer <= 0) g.state = raceState.mode;
+    }
+
+    const speed = g.state==='frightened' ? CONFIG.GHOST_FRIGHT_SPEED
+                : g.state==='eyes' ? CONFIG.GHOST_EYES_SPEED
+                : CONFIG.GHOST_SPEED;
+
+    if(atTileCenter(g)){
+      snapToTile(g);
+
+      // Apply any frightened-mode reversal only when grid and pixel positions are
+      // synchronized at a tile center. This keeps the movement state coherent.
+      if(g.pendingReverse){
+        const rev = oppositeDir(g.dir);
+        if(rev && ghostCanMove(g.col, g.row, rev, false)) g.dir = rev;
+        g.pendingReverse = false;
+      }
+
+      if(g.state === 'eyes' && g.col===9 && g.row===8){
+        g.state = raceState.mode; // revived at the house
+      }
+
+      let target;
+      if(g.state === 'eyes'){ target = {col:9,row:8}; }
+      else if(g.state === 'frightened'){
+        // flee: pick a random valid direction (not reversing) biased away from the player
+        const options = Object.keys(DIRS).filter(d => d!==oppositeDir(g.dir) && ghostCanMove(g.col,g.row,d,false));
+        const valid = options.length ? options : Object.keys(DIRS).filter(d=>ghostCanMove(g.col,g.row,d,false));
+        g.dir = valid[Math.floor(Math.random()*valid.length)] || g.dir;
+        target = null;
+      }
+      else if(g.state === 'scatter'){ target = g.corner; }
+      else { target = {col:player.col, row:player.row}; }
+
+      if(target){
+        let nextDir = bfsNextDir(g.col, g.row, target.col, target.row, g.state==='eyes');
+        // Avoid corner jitter: don't reverse direction unless it is the only legal option.
+        if(nextDir === oppositeDir(g.dir) && g.state !== 'eyes') {
+          const alternatives = Object.keys(DIRS).filter(d => d !== oppositeDir(g.dir) && ghostCanMove(g.col,g.row,d,false));
+          if(alternatives.length){
+            const preferred = alternatives.find(d => {
+              const dd = DIRS[d];
+              const nc = ((g.col+dd.dx)+GRID_W)%GRID_W, nr = g.row+dd.dy;
+              return bfsNextDir(nc,nr,target.col,target.row,false) !== null;
+            });
+            nextDir = preferred || alternatives[0];
+          }
+        }
+        if(nextDir) g.dir = nextDir;
+      }
+
+      const d = DIRS[g.dir];
+      if(d){
+        const nc = g.col + d.dx, nr = g.row + d.dy;
+        if(ghostCanMove(g.col, g.row, g.dir, g.state==='eyes')){
+          g.col = nc; g.row = nr;
+        } else {
+          g.dir = null;
+        }
+      }
+    }
+
+    if(g.dir) stepGhostEntity(g, g.dir, speed * TILE * dt);
+  }
+
+  resolveGhostCollisions();
+}
+
+function resolveGhostCollisions(){
+  const p = player;
+  for(const g of ghosts){
+    if(g.releaseDelay > 0) continue;
+    const dx = g.x-p.x, dy = g.y-p.y;
+    if(Math.hypot(dx,dy) < TILE*0.55){
+      if(g.state === 'frightened'){
+        raceState.ghostCombo++;
+        const pts = [200,400,800,1600][Math.min(raceState.ghostCombo-1,3)];
+        raceState.score += pts;
+        raceState.ghostsEaten++;
+        g.state = 'eyes';
+        spawnPopup(g.x, g.y, '+'+pts, g.color);
+        spawnParticles(g.x, g.y, g.color, 14);
+      } else if(g.state !== 'eyes'){
+        loseLife();
+        return;
+      }
+    }
+  }
+}
+
+function loseLife(){
+  raceState.lives--;
+  spawnParticles(player.x, player.y, '#ff5252', 18);
+  if(raceState.lives <= 0){
+    endRace('down');
+    return;
+  }
+  // reset positions, keep pellets/score, brief pause via respawnTimer
+  const start = findStart();
+  const p = tileToPx(start.col, start.row);
+  player.col=start.col; player.row=start.row; player.x=p.x; player.y=p.y; player.dir=null; player.nextDir=null; player.heldDir=null;
+  keys.up=keys.down=keys.left=keys.right=false;
+  const ghostStarts = [
+    {col:9,row:8}, {col:7,row:10}, {col:11,row:10}, {col:9,row:12}
+  ];
+  for(let i=0;i<ghosts.length;i++){
+    const g = ghosts[i], gs = ghostStarts[i];
+    const gp = tileToPx(gs.col, gs.row);
+    g.col=gs.col; g.row=gs.row; g.x=gp.x; g.y=gp.y; g.state='scatter'; g.dir=null; g.pendingReverse=false;
+    g.releaseDelay=i*600;
+  }
+  raceState.respawnTimer = 1200;
+}
+
+/* =========================================================================
+   PARTICLES + SCORE POPUPS
+   ========================================================================= */
+function spawnParticles(x,y,color,count){
+  for(let i=0;i<count;i++){
+    const a = Math.random()*Math.PI*2, spd = 0.6+Math.random()*1.6;
+    particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,life:1,color});
+  }
+}
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){
+    const pt = particles[i];
+    pt.x += pt.vx; pt.y += pt.vy; pt.life -= dt*1.6;
+    if(pt.life <= 0) particles.splice(i,1);
+  }
+}
+function spawnPopup(x,y,text,color){ popups.push({x,y,text,color,life:1}); }
+function updatePopups(dt){
+  for(let i=popups.length-1;i>=0;i--){
+    const u = popups[i];
+    u.y -= 24*dt; u.life -= dt*0.9;
+    if(u.life <= 0) popups.splice(i,1);
+  }
+}
+
+/* =========================================================================
+   MAIN RACE UPDATE
+   ========================================================================= */
+function updateRace(dt){
+  const rs = raceState;
+  rs.elapsed += dt;
+  rs.timeLeft = Math.max(0, CONFIG.TIME_LIMIT_S - rs.elapsed);
+
+  if(rs.respawnTimer > 0){
+    rs.respawnTimer -= dt*1000;
+    updatePowerPelletRespawns(dt);
+    updateFruitSpawning();
+    updateParticles(dt); updatePopups(dt);
+    if(rs.timeLeft <= 0) endRace('timeup');
+    return;
+  }
+
+  updatePlayer(dt);
+  updateGhosts(dt, rs.elapsed*1000);
+  updatePowerPelletRespawns(dt);
+  updateFruitSpawning();
+  updateParticles(dt);
+  updatePopups(dt);
+
+  // Dynamic power pellets replenish during play, so maze completion is based on
+  // clearing the ordinary maze dots rather than waiting for replenishing power pellets.
+  const remaining = pellets.filter(p=>p.alive && p.type==='pellet').length;
+  if(remaining === 0){
+    endRace('completed');
+    return;
+  }
+  if(rs.timeLeft <= 0){
+    endRace('timeup');
+    return;
+  }
+}
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function render(){
+  ctx.clearRect(0,0,W,H);
+
+  const bg = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
+  bg.addColorStop(0, '#0d0f22');
+  bg.addColorStop(1, '#06070f');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  drawMaze();
+  drawPellets();
+  drawFruit();
+  drawParticlesLayer();
+  drawGhosts();
+  drawPlayer();
+  drawPopups();
+  drawVignette();
+}
+
+function drawMaze(){
+  const glow = 0.5 + Math.sin(performance.now()*0.0025)*0.5;
+  ctx.save();
+  ctx.shadowColor = `rgba(46,107,255,${0.35+glow*0.25})`;
+  ctx.shadowBlur = 6;
+  ctx.strokeStyle = '#2e6bff';
+  ctx.lineWidth = Math.max(2, TILE*0.12);
+  ctx.lineJoin = 'round';
+  for(let r=0;r<GRID_H;r++){
+    for(let c=0;c<GRID_W;c++){
+      if(MAZE_ROWS[r][c] !== '#') continue;
+      const x = offsetX+c*TILE, y = offsetY+r*TILE;
+      // draw only the edges adjacent to a non-wall tile, for a clean outlined look
+      const n = r>0 && MAZE_ROWS[r-1][c] !== '#';
+      const s = r<GRID_H-1 && MAZE_ROWS[r+1][c] !== '#';
+      const w = cellAt(c-1,r) !== '#';
+      const e = cellAt(c+1,r) !== '#';
+      ctx.beginPath();
+      if(n){ ctx.moveTo(x,y); ctx.lineTo(x+TILE,y); }
+      if(s){ ctx.moveTo(x,y+TILE); ctx.lineTo(x+TILE,y+TILE); }
+      if(w){ ctx.moveTo(x,y); ctx.lineTo(x,y+TILE); }
+      if(e){ ctx.moveTo(x+TILE,y); ctx.lineTo(x+TILE,y+TILE); }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // ghost house door
+  ctx.fillStyle = 'rgba(255,107,214,0.8)';
+  for(let r=0;r<GRID_H;r++) for(let c=0;c<GRID_W;c++){
+    if(MAZE_ROWS[r][c] === '-') ctx.fillRect(offsetX+c*TILE, offsetY+r*TILE+TILE*0.4, TILE, TILE*0.2);
+  }
+}
+
+function drawPellets(){
+  const pulse = 0.6 + Math.sin(performance.now()*0.006)*0.4;
+  for(const pel of pellets){
+    if(!pel.alive) continue;
+    const {x,y} = tileToPx(pel.col, pel.row);
+    if(pel.type === 'pellet'){
+      ctx.fillStyle = '#ffe9a8';
+      ctx.beginPath(); ctx.arc(x,y,Math.max(1.5,TILE*0.09),0,Math.PI*2); ctx.fill();
+    } else {
+      ctx.save();
+      ctx.shadowColor = '#4df0ff'; ctx.shadowBlur = 8*pulse;
+      ctx.fillStyle = '#eafdff';
+      ctx.beginPath(); ctx.arc(x,y,TILE*0.22*(0.85+pulse*0.15),0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+function drawFruit(){
+  if(!fruit.active) return;
+  const {x,y} = tileToPx(fruit.col, fruit.row);
+  const bob = Math.sin(performance.now()*0.006)*3;
+  ctx.save();
+  ctx.shadowColor = fruit.kind===0 ? '#ff5252' : '#ffb24d';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = fruit.kind===0 ? '#ff5252' : '#ffb24d';
+  ctx.beginPath(); ctx.arc(x, y+bob, TILE*0.3, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#2f8a3f';
+  ctx.fillRect(x-2, y+bob-TILE*0.34, 4, 6);
+  ctx.restore();
+}
+
+function drawParticlesLayer(){
+  for(const pt of particles){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, pt.life);
+    ctx.fillStyle = pt.color;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.4, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawPopups(){
+  for(const u of popups){
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, u.life);
+    ctx.fillStyle = u.color;
+    ctx.font = `700 ${Math.max(11,TILE*0.5)}px Rajdhani, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(u.text, u.x, u.y);
+    ctx.restore();
+  }
+}
+
+function drawPlayer(){
+  const p = player;
+  const mouthOpen = p.dir ? Math.abs(Math.sin(p.mouthPhase))*0.42 : 0.18;
+  const angleMap = {right:0, down:Math.PI/2, left:Math.PI, up:-Math.PI/2};
+  const ang = angleMap[p.dir] ?? 0;
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,214,102,0.7)'; ctx.shadowBlur = 8;
+  ctx.translate(p.x, p.y);
+  ctx.rotate(ang);
+  ctx.fillStyle = '#ffd866';
+  ctx.beginPath();
+  const r = TILE*0.42;
+  ctx.arc(0,0,r, mouthOpen*Math.PI*0.6, Math.PI*2 - mouthOpen*Math.PI*0.6);
+  ctx.lineTo(0,0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGhosts(){
+  for(const g of ghosts){
+    if(g.releaseDelay > 0) continue;
+    const r = TILE*0.4;
+    ctx.save();
+    ctx.translate(g.x, g.y);
+    if(g.state === 'eyes'){
+      drawGhostEyes(g, r);
+      ctx.restore();
+      continue;
+    }
+    const flashing = g.state==='frightened' && g.frightTimer < 2000 && Math.floor(performance.now()/150)%2===0;
+    const bodyColor = g.state==='frightened' ? (flashing ? '#eef' : '#2b3fd6') : g.color;
+    ctx.shadowColor = bodyColor; ctx.shadowBlur = 6;
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.arc(0,-r*0.1, r, Math.PI, 0);
+    ctx.lineTo(r, r*0.7);
+    for(let i=0;i<3;i++){
+      const wx = r - (i*2/3)*2*r;
+      ctx.quadraticCurveTo(wx - r/3, r*0.3, wx - 2*r/3, r*0.7);
+    }
+    ctx.lineTo(-r, r*0.7);
+    ctx.closePath();
+    ctx.fill();
+    drawGhostEyes(g, r, g.state==='frightened');
+    ctx.restore();
+  }
+}
+function drawGhostEyes(g, r, scared){
+  const d = DIRS[g.dir] || {dx:0,dy:0};
+  const ox = d.dx*r*0.28, oy = d.dy*r*0.28;
+  ctx.fillStyle = scared ? '#ffd866' : '#eef2ff';
+  ctx.beginPath(); ctx.arc(-r*0.32, -r*0.1, r*0.24, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(r*0.32, -r*0.1, r*0.24, 0, Math.PI*2); ctx.fill();
+  if(!scared){
+    ctx.fillStyle = '#1a1c3a';
+    ctx.beginPath(); ctx.arc(-r*0.32+ox, -r*0.1+oy, r*0.12, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r*0.32+ox, -r*0.1+oy, r*0.12, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function drawVignette(){
+  const v = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.75);
+  v.addColorStop(0,'rgba(0,0,0,0)');
+  v.addColorStop(1,'rgba(0,0,0,0.55)');
+  ctx.fillStyle = v; ctx.fillRect(0,0,W,H);
+}
+
+/* =========================================================================
+   HUD
+   ========================================================================= */
+function formatTime(s){
+  const m = Math.floor(s/60), sec = Math.floor(s%60);
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+function renderLives(){
+  livesWrap.innerHTML = '';
+  for(let i=0;i<CONFIG.LIVES;i++){
+    const d = document.createElement('div');
+    d.className = 'life-dot' + (i < raceState.lives ? '' : ' spent');
+    livesWrap.appendChild(d);
+  }
+}
+function updateHud(){
+  hudScore.textContent = Math.floor(raceState.score).toLocaleString();
+  hudTimer.textContent = formatTime(raceState.timeLeft);
+  hudTimerChip.classList.toggle('warn', raceState.timeLeft <= 20);
+  renderLives();
+}
+
+/* =========================================================================
+   MAIN LOOP
+   ========================================================================= */
+function loop(now){
+  if(raceState.phase === 'running'){
+    let dt = (now - raceState.lastFrameT)/1000;
+    raceState.lastFrameT = now;
+    dt = Math.min(dt, 0.05);
+    updateRace(dt);
+    render();
+    updateHud();
+  }
+  if(raceState.phase === 'running' || raceState.phase === 'countdown'){
+    rafId = requestAnimationFrame(loop);
+  }
+}
+
+/* =========================================================================
+   LIFECYCLE
+   ========================================================================= */
+function startCountdown(){
+  raceState.phase = 'countdown';
+  raceState.countdownValue = 3;
+  countdownOverlay.classList.remove('hidden');
+  countdownOverlay.textContent = '3';
+  render(); renderLives();
+  const tick = ()=>{
+    raceState.countdownValue -= 1;
+    if(raceState.countdownValue <= 0){
+      countdownOverlay.textContent = 'GO!';
+      setTimeout(()=>{ countdownOverlay.classList.add('hidden'); beginRunning(); }, 450);
+    } else {
+      countdownOverlay.textContent = String(raceState.countdownValue);
+      setTimeout(tick, 700);
+    }
+  };
+  setTimeout(tick, 700);
+}
+function beginRunning(){
+  raceState.phase = 'running';
+  raceState.lastFrameT = performance.now();
+  rafId = requestAnimationFrame(loop);
+}
+
+function endRace(status){
+  raceState.phase = 'ended';
+  raceState.endedStatus = status;
+  cancelAnimationFrame(rafId);
+  render();
+
+  const timeStr = formatTimeMs(raceState.elapsed);
+  let finalScore = Math.floor(raceState.score);
+  if(status === 'completed'){
+    const speedBonus = Math.round(Math.max(0, CONFIG.TIME_LIMIT_S - raceState.elapsed) * 15);
+    finalScore += speedBonus;
+  }
+
+  const record = {
+    name: currentPlayerInfo.name,
+    employeeId: currentPlayerInfo.employeeId,
+    location: currentPlayerInfo.location,
+    score: finalScore,
+    pelletsEaten: raceState.pelletsEaten,
+    powerEaten: raceState.powerEaten,
+    ghostsEaten: raceState.ghostsEaten,
+    timeTaken: timeStr,
+    timeTakenSeconds: Math.round(raceState.elapsed*10)/10,
+    status: status === 'completed' ? 'Completed' : (status === 'down' ? 'Game Over' : "Time's Up"),
+    playedAt: new Date().toISOString(),
+  };
+  saveRecord(record);
+  showResultScreen(record);
+}
+
+function formatTimeMs(s){
+  const m = Math.floor(s/60), sec = s%60;
+  return `${String(m).padStart(2,'0')}:${sec.toFixed(1).padStart(4,'0')}`;
+}
+
+function showResultScreen(record){
+  const badgeClass = { 'Completed':'completed', 'Game Over':'down', "Time's Up":'timeup' };
+  const titleMap = { 'Completed':'Maze Cleared!', 'Game Over':'Game Over', "Time's Up":"Time's Up" };
+  resultBadge.className = 'result-badge ' + badgeClass[record.status];
+  resultBadge.textContent = record.status.toUpperCase();
+  resultTitle.textContent = titleMap[record.status];
+  resultScore.textContent = record.score.toLocaleString();
+  resultTime.textContent = record.timeTaken;
+  resultPellets.textContent = record.pelletsEaten;
+  resultPower.textContent = record.powerEaten;
+  resultGhosts.textContent = record.ghostsEaten;
+  showScreen('result');
+}
+
+/* =========================================================================
+   RECORD STORAGE + REMOTE SYNC
+   ========================================================================= */
+function loadRecords(){
+  try{ const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+  catch(e){ console.error('Failed to load records', e); return []; }
+}
+function saveRecord(record){
+  const all = loadRecords();
+  all.push(record);
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); }
+  catch(e){ console.error('Failed to save record', e); }
+  syncRecordToRemote(record);
+}
+function syncRecordToRemote(record){
+  if(!CONFIG.REMOTE_ENDPOINT_URL){
+    syncMsg.textContent = 'Result saved locally (no tracking sheet configured yet).';
+    return;
+  }
+  syncMsg.textContent = 'Saving your result…';
+  const payload = Object.assign({ secret: CONFIG.REMOTE_SHARED_SECRET }, record);
+  fetch(CONFIG.REMOTE_ENDPOINT_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(payload),
+  })
+  .then(r => { syncMsg.textContent = r.ok ? '✔ Result recorded.' : '⚠ Could not record result (HTTP '+r.status+').'; })
+  .catch(() => { syncMsg.textContent = '⚠ Could not reach the tracking sheet. Result saved locally.'; });
+}
+
+/* =========================================================================
+   INFO SCREEN -> START FLOW
+   ========================================================================= */
+btnStart.addEventListener('click', ()=>{
+  const name = inputName.value.trim();
+  const empId = inputEmpId.value.trim();
+  const locEl = document.querySelector('input[name="location"]:checked');
+  if(!name || !empId || !locEl){
+    infoError.textContent = 'Please fill in your name, employee ID, and select a location.';
+    return;
+  }
+  infoError.textContent = '';
+  currentPlayerInfo = { name, employeeId: empId, location: locEl.value };
+
+  showScreen('game');
+  resizeCanvas();
+  resetGameState();
+  startCountdown();
+});
+
+btnPlayAgain.addEventListener('click', ()=>{ showScreen('info'); });
+btnExit.addEventListener('click', ()=>{
+  const note = document.getElementById('exitNote');
+  window.close();
+  note.textContent = 'You can close this browser tab now.';
+});
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+resetGameState();
+showScreen('info');
+
+})();
+</script>
+</body>
+</html>
+
